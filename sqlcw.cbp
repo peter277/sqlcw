@@ -15,6 +15,8 @@
 					<Add option="-g" />
 				</Compiler>
 				<Linker>
+					<Add library="libboost_system-mgw51-mt-d-x64-1_66.a" />
+					<Add library="libboost_filesystem-mgw51-mt-d-x64-1_66.a" />
 					<Add library="libboost_program_options-mgw51-mt-d-x64-1_66.a" />
 				</Linker>
 			</Target>
@@ -28,6 +30,8 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
+					<Add library="libboost_system-mgw51-mt-x64-1_66.a" />
+					<Add library="libboost_filesystem-mgw51-mt-x64-1_66.a" />
 					<Add library="libboost_program_options-mgw51-mt-x64-1_66.a" />
 				</Linker>
 			</Target>

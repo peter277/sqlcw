@@ -122,7 +122,7 @@ int main(int argc, char **argv)
         }
 
         if (vmSettings.count("version")) {
-            cout << "SQLCW v1.0" << endl;
+            cout << "SQLCW - SQL Code Wrapper, v1.0" << endl;
             return 0;
         }
 
