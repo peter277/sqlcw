@@ -212,10 +212,12 @@ void process_file( boost::filesystem::path infile, po::variables_map& settings)
         }
 
         // Handle quotes
-        if (ch1 == '\'' || ch1 == '"')
+        if (ch1 == '\'' || ch1 == '"' || ch1 == '`' || ch1 == '[')
         {
             bool wrote_closing_quote = false;
-            char quote_type = ch1;
+            char closing_quote;
+
+            if (ch1 == '[') closing_quote = ']'; else closing_quote = ch1;
 
             // Write opening quote & move cursor
             fputc(ch1, fout);
@@ -225,7 +227,7 @@ void process_file( boost::filesystem::path infile, po::variables_map& settings)
             while (true)
             {
                 fputc(ch1, fout);
-                if (ch1 == quote_type) wrote_closing_quote = true;
+                if (ch1 == closing_quote) wrote_closing_quote = true;
 
                 // Move cursor
                 ch1 = ch2;
