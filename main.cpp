@@ -91,6 +91,7 @@ int main(int argc, char **argv)
             ("suffix,s", po::value<std::string>()->default_value(""), "Suffix to place after SQL statements")
             ("out-dir,o", po::value<std::string>(&out_dir)->default_value("sqlcw-out"), "Directory to write output files")
             ("out-ext,x", po::value<std::string>(), "Extension of output files")
+            ("comments", po::value<std::string>()->default_value("convert"), "Handling of comments: 'strip' or 'convert' to /* */ style")
             ;
 
         // Hidden options, will be allowed both on command line and
@@ -131,6 +132,12 @@ int main(int argc, char **argv)
             return 1;
         }
 
+        if ( !(vmSettings["comments"].as<std::string>() == "convert" || vmSettings["comments"].as<std::string>() == "strip" ) )
+        {
+            cout << "Invalid value specified for --comments option." << endl;
+            return 1;
+        }
+
         // Create output directory
         fs::create_directory(out_dir);
 
@@ -165,6 +172,10 @@ void process_file( boost::filesystem::path infile, po::variables_map& settings)
     std::string prefix = settings["prefix"].as<std::string>(),
                 suffix = settings["suffix"].as<std::string>();
 
+    bool convert_comments;
+    if ( settings["comments"].as<std::string>() == "convert" ) convert_comments = true;
+    else convert_comments = false;
+
     if (settings.count("out-ext"))
     {
         std::string out_ext = std::string(".")+settings["out-ext"].as<std::string>();
@@ -186,13 +197,27 @@ void process_file( boost::filesystem::path infile, po::variables_map& settings)
     ch2 = fgetc(fin);
 
     while (true) {
-        // If we'are at a comment, consume characters until the end of the line/file/comment block
+        // Handle comments
         if (ch1 == '-' && ch2 == '-')
         {
+            ch1 = fgetc(fin); ch2 = fgetc(fin); // Read past "--" characters
+
+            bool space_flag = isspace(ch1); // Comment starts with space?
+
+            if (convert_comments) fputs("/*", fout);
+
             while (ch1 != '\n' && ch1 != EOF)
             {
+                if (convert_comments) fputc(ch1, fout);
+
                 ch1 = ch2;
                 ch2 = fgetc(fin);
+            }
+
+            if (convert_comments)
+            {
+                if (space_flag) fputc(' ', fout); // If started with space, end with one before the closing "*/"
+                fputs("*/", fout);
             }
 
             continue;
@@ -202,9 +227,13 @@ void process_file( boost::filesystem::path infile, po::variables_map& settings)
         {
             while ( !(ch1 == '*' && ch2 == '/') && ch1 != EOF )
             {
+                if (convert_comments) fputc(ch1, fout);
+
                 ch1 = ch2;
                 ch2 = fgetc(fin);
             }
+
+            if (convert_comments) fputs("*/", fout);
 
             ch1 = fgetc(fin);
             ch2 = fgetc(fin);
