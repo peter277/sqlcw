@@ -288,6 +288,7 @@ void process_file( boost::filesystem::path infile, Settings& settings)
         }
 
         // Handle whitespace processing options
+        // nonewline option: strip off new lines
         if (ch1 == '\n' && settings.ws_nonewline)
         {
             // Move cursor
@@ -299,6 +300,7 @@ void process_file( boost::filesystem::path infile, Settings& settings)
             continue;
         }
 
+        // single option: compress multiple spaces into only one
         if (isspace(ch1) && ch1 != '\n' && settings.ws_single)
         {
             fputc(' ', fout);
