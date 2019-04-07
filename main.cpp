@@ -1,6 +1,5 @@
 // sqlcw: SQL Code Wrapper
-// Strips SQL files of comments/converts comments and wraps each statement
-//   in specified text, e.g. prefix "execute (", suffix: ") by odbc;"
+// Utility to wrap SQL for embedding within a host programming language
 
 #include <cstdio>
 #include <cctype>
@@ -283,6 +282,32 @@ void process_file( boost::filesystem::path infile, Settings& settings)
                 ch2 = fgetc(fin);
 
                 if (ch1 == EOF || wrote_closing_quote) break;
+            }
+
+            continue;
+        }
+
+        // Handle whitespace processing options
+        if (ch1 == '\n' && settings.ws_nonewline)
+        {
+            // Move cursor
+            ch1 = ch2;
+            ch2 = fgetc(fin);
+
+            if (!isspace(ch1) && ch1 != ';') fputc(' ', fout);
+
+            continue;
+        }
+
+        if (isspace(ch1) && ch1 != '\n' && settings.ws_single)
+        {
+            fputc(' ', fout);
+
+            // Consume remaining spaces
+            while( isspace(ch1) && ch1 != '\n' && ch1 != EOF)
+            {
+                ch1 = ch2;
+                ch2 = fgetc(fin);
             }
 
             continue;
