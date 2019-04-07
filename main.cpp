@@ -1,22 +1,21 @@
-// sqlcw: SQL Clean & Wrap
+// sqlcw: SQL Code Wrapper
 // Strips SQL files of comments/converts comments and wraps each statement
 //   in specified text, e.g. prefix "execute (", suffix: ") by odbc;"
-
-// TODO: have option to preserve comments, and convert "--" comments to "/* */" (complication: what if the -- comment contains the closing sequence "*/" ? - throw error/warning?)
 
 #include <cstdio>
 #include <cctype>
 #include <iostream>
+
+#include "Settings.hpp"
 
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;
 #include <boost/filesystem.hpp>
 namespace fs = boost::filesystem;
 
-
 using namespace std;
 
-void process_file(boost::filesystem::path infile, po::variables_map& settings);
+void process_file(boost::filesystem::path infile, Settings& settings);
 
 // Replace C++ escape sequences from string outside source code
 std::string replace_escape_seq(std::string s)
@@ -67,14 +66,13 @@ std::string replace_escape_seq(std::string s)
 
 int main(int argc, char **argv)
 {
-    po::variables_map vmSettings;
-    std::string out_dir;
+    po::variables_map vmSettings; // Boost program_options settings structure
+    Settings progSettings; // Own settings structure
 
     try {
         std::string config_file;
 
-        // Declare a group of options that will be
-        // allowed only on command line
+        // Declare a group of options that will be allowed only on command line
         po::options_description generic("Generic");
         generic.add_options()
             ("version,v", "Print version string")
@@ -82,20 +80,18 @@ int main(int argc, char **argv)
             ("config,c", po::value<string>(&config_file)->default_value("sqlcw.cfg"), "Configuration file to use (optional)")
             ;
 
-        // Declare a group of options that will be
-        // allowed both on command line and in
-        // config file
+        // Declare a group of options that will be allowed both on command line and in onfig file
         po::options_description config("Configuration");
         config.add_options()
-            ("prefix,p", po::value<std::string>()->default_value(""), "Prefix to place before SQL statements")
-            ("suffix,s", po::value<std::string>()->default_value(""), "Suffix to place after SQL statements")
-            ("out-dir,o", po::value<std::string>(&out_dir)->default_value("sqlcw-out"), "Directory to write output files")
+            ("prefix,p", po::value<std::string>(&progSettings.prefix)->default_value(""), "Prefix to place before SQL statements")
+            ("suffix,s", po::value<std::string>(&progSettings.suffix)->default_value(""), "Suffix to place after SQL statements")
+            ("out-dir,o", po::value<std::string>(&progSettings.out_dir)->default_value("sqlcw-out"), "Directory to write output files")
             ("out-ext,x", po::value<std::string>(), "Extension of output files")
-            ("comments", po::value<std::string>()->default_value("convert"), "Handling of comments: 'strip' or 'convert' to /* */ style")
+            ("comments,m", po::value<std::string>()->default_value("convert"), "Handling of comments: 'strip' or 'convert' to /* */ style")
+            ("whitespace,w", po::value< std::vector<std::string> >()->multitoken(), "Whitespace processing switches list: 'single', 'nonewline'")
             ;
 
-        // Hidden options, will be allowed both on command line and
-        // in config file, but will not be shown to the user.
+        // Hidden options, will be allowed both on command line and in config file, but will not be shown to the user.
         po::options_description hidden("Hidden options");
         hidden.add_options()
             ("input-file", po::value< std::vector<std::string> >(), "Input file")
@@ -132,23 +128,54 @@ int main(int argc, char **argv)
             return 1;
         }
 
-        if ( !(vmSettings["comments"].as<std::string>() == "convert" || vmSettings["comments"].as<std::string>() == "strip" ) )
+        if (vmSettings.count("comments"))
         {
-            cout << "Invalid value specified for --comments option." << endl;
-            return 1;
+            std::string s = vmSettings["comments"].as<std::string>();
+
+            if (s == "convert")
+            {
+                progSettings.convert_comments = true;
+            }
+            else if (s == "strip")
+            {
+                progSettings.convert_comments = false;
+            }
+            else
+            {
+                cout << "Invalid value specified for --comments option." << endl;
+                return 1;
+            }
+        }
+
+        if (vmSettings.count("out-ext")) {
+            progSettings.out_ext = vmSettings["out-ext"].as<std::string>();
+        }
+
+        if(vmSettings.count("whitespace")) {
+            for (auto &s : vmSettings["whitespace"].as<std::vector<std::string>>())
+            {
+                if (s == "single")
+                {
+                    progSettings.ws_single = true;
+                }
+                else if (s == "nonewline")
+                {
+                    progSettings.ws_nonewline = true;
+                }
+                else
+                {
+                    cout << "Invalid value specified for --whitespace option." << endl;
+                    return 1;
+                }
+            }
         }
 
         // Create output directory
-        fs::create_directory(out_dir);
+        fs::create_directory(progSettings.out_dir);
 
         // Process potential escape characters used in prefix & suffix strings
-        po::variable_value escaped_prefix = po::variable_value(replace_escape_seq(vmSettings["prefix"].as<std::string>()), vmSettings["prefix"].defaulted());
-        vmSettings.erase("prefix");
-        vmSettings.insert( std::make_pair( std::string("prefix"), escaped_prefix) );
-
-        po::variable_value escaped_suffix = po::variable_value(replace_escape_seq(vmSettings["suffix"].as<std::string>()), vmSettings["suffix"].defaulted());
-        vmSettings.erase("suffix");
-        vmSettings.insert( std::make_pair( std::string("suffix"), escaped_suffix) );
+        progSettings.prefix = replace_escape_seq(progSettings.prefix);
+        progSettings.suffix = replace_escape_seq(progSettings.suffix);
     }
     catch(exception& e)
     {
@@ -159,37 +186,30 @@ int main(int argc, char **argv)
     // Loop through files
     for (auto &f : vmSettings["input-file"].as< vector<string> >())
     {
-        process_file(f, vmSettings);
+        process_file(f, progSettings);
     }
 
     return 0;
 }
 
-void process_file( boost::filesystem::path infile, po::variables_map& settings)
+void process_file( boost::filesystem::path infile, Settings& settings)
 {
     char ch1, ch2;
     boost::filesystem::path outfile;
-    std::string prefix = settings["prefix"].as<std::string>(),
-                suffix = settings["suffix"].as<std::string>();
 
-    bool convert_comments;
-    if ( settings["comments"].as<std::string>() == "convert" ) convert_comments = true;
-    else convert_comments = false;
-
-    if (settings.count("out-ext"))
+    if (settings.out_ext.is_initialized())
     {
-        std::string out_ext = std::string(".")+settings["out-ext"].as<std::string>();
-        outfile = boost::filesystem::path(settings["out-dir"].as<std::string>()) / (infile.stem().string()+out_ext);
+        std::string out_ext = std::string(".")+settings.out_ext.value();
+        outfile = boost::filesystem::path(settings.out_dir) / (infile.stem().string()+out_ext);
     }
     else
     {
-        outfile = boost::filesystem::path(settings["out-dir"].as<std::string>()) / infile.filename();
+        outfile = boost::filesystem::path(settings.out_dir) / infile.filename();
     }
 
     FILE *fin = fopen(infile.string().c_str(),"r"),
          *fout = fopen(outfile.string().c_str(),"w");
 
-    //const char *prefix = "", *suffix = "\nGO\n";
     bool wrote_prefix = false;
 
     // Initialise state machine
@@ -204,17 +224,17 @@ void process_file( boost::filesystem::path infile, po::variables_map& settings)
 
             bool space_flag = isspace(ch1); // Comment starts with space?
 
-            if (convert_comments) fputs("/*", fout);
+            if (settings.convert_comments) fputs("/*", fout);
 
             while (ch1 != '\n' && ch1 != EOF)
             {
-                if (convert_comments) fputc(ch1, fout);
+                if (settings.convert_comments) fputc(ch1, fout);
 
                 ch1 = ch2;
                 ch2 = fgetc(fin);
             }
 
-            if (convert_comments)
+            if (settings.convert_comments)
             {
                 if (space_flag) fputc(' ', fout); // If started with space, end with one before the closing "*/"
                 fputs("*/", fout);
@@ -227,13 +247,13 @@ void process_file( boost::filesystem::path infile, po::variables_map& settings)
         {
             while ( !(ch1 == '*' && ch2 == '/') && ch1 != EOF )
             {
-                if (convert_comments) fputc(ch1, fout);
+                if (settings.convert_comments) fputc(ch1, fout);
 
                 ch1 = ch2;
                 ch2 = fgetc(fin);
             }
 
-            if (convert_comments) fputs("*/", fout);
+            if (settings.convert_comments) fputs("*/", fout);
 
             ch1 = fgetc(fin);
             ch2 = fgetc(fin);
@@ -277,14 +297,14 @@ void process_file( boost::filesystem::path infile, po::variables_map& settings)
             if (ch1 == ';')
             {
                 fputc(ch1, fout);
-                fprintf(fout, "%s", suffix.c_str());
+                fprintf(fout, "%s", settings.suffix.c_str());
                 wrote_prefix = false; // Reset prefix flag
             }
             else
             {
                 if (!wrote_prefix && !isspace(ch1))
                 {
-                    fprintf(fout, "%s", prefix.c_str());
+                    fprintf(fout, "%s", settings.prefix.c_str());
                     wrote_prefix = true;
                 }
 
