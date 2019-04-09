@@ -88,6 +88,7 @@ int main(int argc, char **argv)
             ("out-ext,x", po::value<std::string>(), "Extension of output files")
             ("comments,m", po::value<std::string>()->default_value("convert"), "Handling of comments: 'strip' or 'convert' to /* */ style")
             ("whitespace,w", po::value< std::vector<std::string> >()->multitoken(), "Whitespace processing switches list: 'single', 'nonewline'")
+            ("strip-semicolons", po::bool_switch()->default_value(false), "Strip semicolons from SQL statements")
             ;
 
         // Hidden options, will be allowed both on command line and in config file, but will not be shown to the user.
@@ -169,12 +170,15 @@ int main(int argc, char **argv)
             }
         }
 
-        // Create output directory
-        fs::create_directory(progSettings.out_dir);
+        progSettings.strip_semicolons = vmSettings["strip-semicolons"].as<bool>();
 
         // Process potential escape characters used in prefix & suffix strings
         progSettings.prefix = replace_escape_seq(progSettings.prefix);
         progSettings.suffix = replace_escape_seq(progSettings.suffix);
+
+
+        // Create output directory
+        fs::create_directory(progSettings.out_dir);
     }
     catch(exception& e)
     {
@@ -323,7 +327,7 @@ void process_file( boost::filesystem::path infile, Settings& settings)
         {
             if (ch1 == ';')
             {
-                fputc(ch1, fout);
+                if (!settings.strip_semicolons) fputc(ch1, fout);
                 fprintf(fout, "%s", settings.suffix.c_str());
                 wrote_prefix = false; // Reset prefix flag
             }
