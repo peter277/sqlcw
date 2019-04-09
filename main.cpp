@@ -219,6 +219,9 @@ void process_file( boost::filesystem::path infile, Settings& settings)
     ch1 = fgetc(fin);
     ch2 = fgetc(fin);
 
+    // Current line being processed
+    std::string currLine;
+
     while (true) {
         // Handle comments
         if (ch1 == '-' && ch2 == '-')
@@ -227,11 +230,11 @@ void process_file( boost::filesystem::path infile, Settings& settings)
 
             bool space_flag = isspace(ch1); // Comment starts with space?
 
-            if (settings.convert_comments) fputs("/*", fout);
+            if (settings.convert_comments) currLine += "/*";
 
             while (ch1 != '\n' && ch1 != EOF)
             {
-                if (settings.convert_comments) fputc(ch1, fout);
+                if (settings.convert_comments) currLine += ch1;
 
                 ch1 = ch2;
                 ch2 = fgetc(fin);
@@ -239,8 +242,8 @@ void process_file( boost::filesystem::path infile, Settings& settings)
 
             if (settings.convert_comments)
             {
-                if (space_flag) fputc(' ', fout); // If started with space, end with one before the closing "*/"
-                fputs("*/", fout);
+                if (space_flag) currLine += ' '; // If started with space, end with one before the closing "*/"
+                currLine += "*/";
             }
 
             continue;
@@ -250,13 +253,13 @@ void process_file( boost::filesystem::path infile, Settings& settings)
         {
             while ( !(ch1 == '*' && ch2 == '/') && ch1 != EOF )
             {
-                if (settings.convert_comments) fputc(ch1, fout);
+                if (settings.convert_comments) currLine += ch1;
 
                 ch1 = ch2;
                 ch2 = fgetc(fin);
             }
 
-            if (settings.convert_comments) fputs("*/", fout);
+            if (settings.convert_comments) currLine += "*/";
 
             ch1 = fgetc(fin);
             ch2 = fgetc(fin);
@@ -272,13 +275,13 @@ void process_file( boost::filesystem::path infile, Settings& settings)
             if (ch1 == '[') closing_quote = ']'; else closing_quote = ch1;
 
             // Write opening quote & move cursor
-            fputc(ch1, fout);
+            currLine += ch1;
             ch1 = ch2;
             ch2 = fgetc(fin);
 
             while (true)
             {
-                fputc(ch1, fout);
+                currLine += ch1;
                 if (ch1 == closing_quote) wrote_closing_quote = true;
 
                 // Move cursor
@@ -299,7 +302,7 @@ void process_file( boost::filesystem::path infile, Settings& settings)
             ch1 = ch2;
             ch2 = fgetc(fin);
 
-            if (!isspace(ch1) && ch1 != ';') fputc(' ', fout);
+            if (!isspace(ch1) && ch1 != ';') currLine += ' ';
 
             continue;
         }
@@ -307,7 +310,7 @@ void process_file( boost::filesystem::path infile, Settings& settings)
         // single option: compress multiple spaces into only one
         if (isspace(ch1) && ch1 != '\n' && settings.ws_single)
         {
-            fputc(' ', fout);
+            currLine += ' ';
 
             // Consume remaining spaces
             while( isspace(ch1) && ch1 != '\n' && ch1 != EOF)
@@ -327,19 +330,19 @@ void process_file( boost::filesystem::path infile, Settings& settings)
         {
             if (ch1 == ';')
             {
-                if (!settings.strip_semicolons) fputc(ch1, fout);
-                fprintf(fout, "%s", settings.suffix.c_str());
+                if (!settings.strip_semicolons) currLine += ch1;
+                currLine += settings.suffix;
                 wrote_prefix = false; // Reset prefix flag
             }
             else
             {
                 if (!wrote_prefix && !isspace(ch1))
                 {
-                    fprintf(fout, "%s", settings.prefix.c_str());
+                    currLine += settings.prefix;
                     wrote_prefix = true;
                 }
 
-                fputc(ch1, fout);
+                currLine += ch1;
             }
         }
 
@@ -347,6 +350,8 @@ void process_file( boost::filesystem::path infile, Settings& settings)
         ch1 = ch2;
         ch2 = fgetc(fin);
     }
+
+    fputs(currLine.c_str(), fout);
 
     fclose(fin);
     fclose(fout);
