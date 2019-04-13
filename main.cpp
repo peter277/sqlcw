@@ -235,7 +235,16 @@ void process_file( boost::filesystem::path infile, Settings& settings)
 
             while ( !(ch1 == '\n' || ch1 == EOF) )
             {
-                if (settings.convert_comments) currLine += ch1;
+                if (settings.convert_comments)
+                {
+                    currLine += ch1;
+
+                    if (ch1 == '*' && ch2 == '/')
+                    {
+                        cout << "Warning (" << infile.filename() << R"(): Found comment closure "*/" while converting "--" style comment. Space inserted inbetween.)" << endl;
+                        currLine += ' ';
+                    }
+                }
 
                 ch1 = ch2;
                 ch2 = fgetc(fin);
