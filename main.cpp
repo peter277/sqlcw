@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include "Settings.hpp"
+#include "LineBuffer.hpp"
 
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;
@@ -220,7 +221,7 @@ void process_file( boost::filesystem::path infile, Settings& settings)
     ch2 = fgetc(fin);
 
     // Current line being processed
-    std::string currLine;
+    LineBuffer currLine;
 
     while (true) {
         // Handle comments
