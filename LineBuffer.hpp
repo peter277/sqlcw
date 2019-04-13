@@ -1,7 +1,7 @@
-
 #pragma once
 
 #include <cctype>
+#include <cstdio>
 #include <string>
 
 class LineBuffer {
@@ -9,13 +9,14 @@ class LineBuffer {
     bool wrote_nonspace = false;
 
 public:
-    void append(char c)
+    LineBuffer& append(char c)
     {
         if (!isspace(c)) wrote_nonspace = true;
         line += c;
+        return *this;
     }
 
-    void append(const char *s)
+    LineBuffer& append(const char *s)
     {
         if (!wrote_nonspace)
         {
@@ -30,18 +31,35 @@ public:
         }
 
         line += s;
+        return *this;
     }
 
-    void append(const std::string& s)
+    LineBuffer& append(const std::string& s)
     {
-        append(s.c_str());
+        return append(s.c_str());
     }
 
     template<typename T>
     LineBuffer& operator+=(T s)
     {
-        append(s);
-        return *this;
+        return append(s);
+    }
+
+    bool has_nonspace() const
+    {
+        return wrote_nonspace;
+    }
+
+    void write_line(FILE *fout)
+    {
+        fputs(line.c_str(), fout);
+        clear();
+    }
+
+    void write_nonspace_line(FILE *fout)
+    {
+        if (wrote_nonspace) fputs(line.c_str(), fout);
+        clear();
     }
 
     void clear()

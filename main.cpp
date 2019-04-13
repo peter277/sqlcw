@@ -233,7 +233,7 @@ void process_file( boost::filesystem::path infile, Settings& settings)
 
             if (settings.convert_comments) currLine += "/*";
 
-            while (ch1 != '\n' && ch1 != EOF)
+            while ( !(ch1 == '\n' || ch1 == EOF) )
             {
                 if (settings.convert_comments) currLine += ch1;
 
@@ -243,9 +243,20 @@ void process_file( boost::filesystem::path infile, Settings& settings)
 
             if (settings.convert_comments)
             {
-                if (space_flag) currLine += ' '; // If started with space, end with one before the closing "*/"
+                if (space_flag) currLine += ' '; // If comment started with a space, end with one before the closing "*/"
                 currLine += "*/";
             }
+
+            if (ch1 == '\n')
+            {
+                currLine += ch1;
+                ch1 = ch2;
+                ch2 = fgetc(fin);
+            }
+
+            // Write line
+            if (!settings.convert_comments) currLine.write_nonspace_line(fout);
+            else currLine.write_line(fout);
 
             continue;
         }
@@ -264,6 +275,26 @@ void process_file( boost::filesystem::path infile, Settings& settings)
 
             ch1 = fgetc(fin);
             ch2 = fgetc(fin);
+
+            // Read up until the next non-space character or newline
+            while (isspace(ch1) && ch1 != '\n')
+            {
+                currLine += ch1;
+                ch1 = ch2;
+                ch2 = fgetc(fin);
+            }
+
+            if (ch1 == '\n')
+            {
+                currLine += ch1;
+                ch1 = ch2;
+                ch2 = fgetc(fin);
+            }
+
+            // Write line(s)
+            if (!settings.convert_comments) currLine.write_nonspace_line(fout);
+            else currLine.write_line(fout);
+
             continue;
         }
 
@@ -325,6 +356,9 @@ void process_file( boost::filesystem::path infile, Settings& settings)
 
         if (ch1 == EOF)
         {
+            if (wrote_prefix) currLine += settings.suffix;
+            currLine.write_line(fout);
+            wrote_prefix = false;
             break;
         }
         else
@@ -347,12 +381,13 @@ void process_file( boost::filesystem::path infile, Settings& settings)
             }
         }
 
+        // Reached end of character processing loop iteration - write line if hit a newline
+        if (ch1 == '\n') currLine.write_line(fout);
+
         // Move cursor
         ch1 = ch2;
         ch2 = fgetc(fin);
     }
-
-    fputs(currLine.c_str(), fout);
 
     fclose(fin);
     fclose(fout);
