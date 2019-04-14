@@ -1,6 +1,3 @@
-// sqlcw: SQL Code Wrapper
-// Utility to wrap SQL for embedding within a host programming language
-
 #include <cstdio>
 #include <cctype>
 #include <iostream>
@@ -15,54 +12,10 @@ namespace fs = boost::filesystem;
 
 using namespace std;
 
+// Declarations
 void process_file(boost::filesystem::path infile, Settings& settings);
+std::string replace_escape_seq(std::string s);
 
-// Replace C++ escape sequences from string outside source code
-std::string replace_escape_seq(std::string s)
-{
-    static vector< pair< string, string > > patterns = {
-        { "\\\\", "\\" },
-        { "\\n", "\n" },
-        { "\\r", "\r" },
-        { "\\t", "\t" },
-        { "\\\"", "\"" }
-    };
-
-    if (s.size() <= 1) return s;
-
-    std::string result;
-    result.reserve(s.size());
-
-    for (unsigned i = 0; i<s.size(); i++)
-    {
-        bool found_pattern = false;
-
-        if ( i<(s.size()-1) )
-        {
-            for (auto &p : patterns)
-            {
-                if (s[i] == p.first[0] && s[i+1] == p.first[1])
-                {
-                    found_pattern = true;
-                    result += p.second;
-                    i++;
-                    break;
-                }
-            }
-
-            if (!found_pattern)
-            {
-                result += s[i];
-            }
-        }
-        else
-        {
-            result += s[i];
-        }
-    }
-
-    return result;
-}
 
 int main(int argc, char **argv)
 {
@@ -80,7 +33,7 @@ int main(int argc, char **argv)
             ("config,c", po::value<string>(&config_file)->default_value("sqlcw.cfg"), "Configuration file to use (optional)")
             ;
 
-        // Declare a group of options that will be allowed both on command line and in onfig file
+        // Declare a group of options that will be allowed both on command line and in config file
         po::options_description config("Configuration");
         config.add_options()
             ("prefix,p", po::value<std::string>(&progSettings.prefix)->default_value(""), "Prefix to place before SQL statements")
@@ -92,7 +45,7 @@ int main(int argc, char **argv)
             ("strip-semicolons", po::bool_switch()->default_value(false), "Strip semicolons from SQL statements")
             ;
 
-        // Hidden options, will be allowed both on command line and in config file, but will not be shown to the user.
+        // Hidden options, will be allowed both on command line and in config file, but will not be shown to the user
         po::options_description hidden("Hidden options");
         hidden.add_options()
             ("input-file", po::value< std::vector<std::string> >(), "Input file")
@@ -196,7 +149,9 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void process_file( boost::filesystem::path infile, Settings& settings)
+
+/// Process input SQL file using configuration in provided Settings object
+void process_file(boost::filesystem::path infile, Settings& settings)
 {
     char ch1, ch2;
     boost::filesystem::path outfile;
@@ -401,3 +356,52 @@ void process_file( boost::filesystem::path infile, Settings& settings)
     fclose(fin);
     fclose(fout);
 }
+
+
+/// Replace C++ escape sequences within string outside source code
+std::string replace_escape_seq(std::string s)
+{
+    static vector< pair< string, string > > patterns = {
+        { "\\n", "\n" },
+        { "\\r", "\r" },
+        { "\\t", "\t" },
+        { "\\\\", "\\" },
+        { "\\\"", "\"" }
+    };
+
+    if (s.size() <= 1) return s;
+
+    std::string result;
+    result.reserve(s.size());
+
+    for (unsigned i = 0; i<s.size(); i++)
+    {
+        bool found_pattern = false;
+
+        if ( i<(s.size()-1) )
+        {
+            for (auto &p : patterns)
+            {
+                if (s[i] == p.first[0] && s[i+1] == p.first[1])
+                {
+                    found_pattern = true;
+                    result += p.second;
+                    i++;
+                    break;
+                }
+            }
+
+            if (!found_pattern)
+            {
+                result += s[i];
+            }
+        }
+        else
+        {
+            result += s[i];
+        }
+    }
+
+    return result;
+}
+
