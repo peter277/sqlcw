@@ -6,7 +6,7 @@
 
 class Settings {
 public:
-    std::string prefix, suffix, out_dir;
+    std::string prefix, suffix, out_dir, header, footer;
 
     boost::optional<std::string> out_ext;
 

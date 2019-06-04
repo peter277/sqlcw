@@ -38,6 +38,8 @@ int main(int argc, char **argv)
         config.add_options()
             ("prefix,p", po::value<std::string>(&progSettings.prefix)->default_value(""), "Prefix to place before SQL statements")
             ("suffix,s", po::value<std::string>(&progSettings.suffix)->default_value(""), "Suffix to place after SQL statements")
+            ("top,t", po::value<std::string>(&progSettings.header)->default_value(""), "Header to place at top of output files")
+            ("bottom,b", po::value<std::string>(&progSettings.footer)->default_value(""), "Footer to place at bottom of output files")
             ("out-dir,o", po::value<std::string>(&progSettings.out_dir)->default_value("sqlcw-out"), "Directory to write output files")
             ("out-ext,x", po::value<std::string>(), "Extension of output files")
             ("comments,m", po::value<std::string>()->default_value("convert"), "Handling of comments: 'strip' or 'convert' to /* */ style")
@@ -126,9 +128,11 @@ int main(int argc, char **argv)
 
         progSettings.strip_semicolons = vmSettings["strip-semicolons"].as<bool>();
 
-        // Process potential escape characters used in prefix & suffix strings
+        // Process potential escape characters used in prefix, suffix, header & footer strings
         progSettings.prefix = replace_escape_seq(progSettings.prefix);
         progSettings.suffix = replace_escape_seq(progSettings.suffix);
+        progSettings.header = replace_escape_seq(progSettings.header);
+        progSettings.footer = replace_escape_seq(progSettings.footer);
 
 
         // Create output directory
@@ -177,6 +181,9 @@ void process_file(boost::filesystem::path infile, Settings& settings)
 
     // Current line being processed
     LineBuffer currLine;
+
+    // Write header to output file before character processing loop
+    fputs(settings.header.c_str(), fout);
 
     while (true) {
         // Handle comments
@@ -352,6 +359,9 @@ void process_file(boost::filesystem::path infile, Settings& settings)
         ch1 = ch2;
         ch2 = fgetc(fin);
     }
+
+    // Write footer to output file now that processing is completed
+    fputs(settings.footer.c_str(), fout);
 
     fclose(fin);
     fclose(fout);
