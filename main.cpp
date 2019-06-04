@@ -30,7 +30,7 @@ int main(int argc, char **argv)
         generic.add_options()
             ("version,v", "Print version string")
             ("help,h", "Display this help information")
-            ("config,c", po::value<string>(&config_file)->default_value("sqlcw.cfg"), "Configuration file to use (optional)")
+            //("config,c", po::value<string>(&config_file)->default_value("sqlcw.cfg"), "Configuration file to use (optional)") // TODO: implement config file parsing
             ;
 
         // Declare a group of options that will be allowed both on command line and in config file
@@ -43,7 +43,7 @@ int main(int argc, char **argv)
             ("out-dir,o", po::value<std::string>(&progSettings.out_dir)->default_value("sqlcw-out"), "Directory to write output files")
             ("out-ext,x", po::value<std::string>(), "Extension of output files")
             ("comments,m", po::value<std::string>()->default_value("convert"), "Handling of comments: 'strip' or 'convert' to /* */ style")
-            ("whitespace,w", po::value< std::vector<std::string> >()->multitoken(), "Whitespace processing switches list: 'single', 'nonewline'")
+            ("whitespace,w", po::value< std::vector<std::string> >()->multitoken(), "Whitespace processing switches list: 'single', 'nonewline' (multitoken option)")
             ("strip-semicolons", po::bool_switch()->default_value(false), "Strip semicolons from SQL statements")
             ;
 
@@ -75,7 +75,11 @@ int main(int argc, char **argv)
         }
 
         if (vmSettings.count("version")) {
-            cout << "SQLCW - SQL Code Wrapper, v1.0" << endl;
+            cout << "SQLCW - SQL CODE WRAPPER, VERSION 1.1" << endl
+                 << "Release Date : 5 July 2019" << endl
+                 << "Website      : http://sqlcw.sourceforge.net/" << endl
+                 << "License      : GNU General Public License version 3.0 (GPLv3)" << endl
+            ;
             return 0;
         }
 
