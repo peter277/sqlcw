@@ -1,0 +1,4 @@
+
+- nonewline fix when preceded by comment [what do we want to do here? still strip all newlines?]
+- utilising parsing of INI like config files - e.g. parse_config_file (library function), with special handling of [top]/[bottom] header/footer sections in config file
+- keeping /*+ */ special comments when using "-comments strip" option. Add keepspec multitoken option? (i.e. "-comments strip keepspec")

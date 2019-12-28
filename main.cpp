@@ -43,7 +43,9 @@ int main(int argc, char **argv)
             ("out-dir,o", po::value<std::string>(&progSettings.out_dir)->default_value("sqlcw-out"), "Directory to write output files")
             ("out-ext,x", po::value<std::string>(), "Extension of output files")
             ("comments,m", po::value<std::string>()->default_value("convert"), "Handling of comments: 'strip' or 'convert' to /* */ style")
-            ("whitespace,w", po::value< std::vector<std::string> >()->multitoken(), "Whitespace processing switches list: 'single', 'nonewline' (multitoken option)")
+            ("whitespace,w", po::value< std::vector<std::string> >()->multitoken(), "Whitespace processing switches list (multitoken option). Values:\n"
+                "  single: \tcompress multiple whitespace characters into one (excl. newline)\n"
+                "  nonewline: \tstrip off newlines from output")
             ("strip-semicolons", po::bool_switch()->default_value(false), "Strip semicolons from SQL statements")
             ;
 
