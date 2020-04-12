@@ -15,9 +15,9 @@
 					<Add option="-g" />
 				</Compiler>
 				<Linker>
-					<Add library="libboost_system-mgw51-mt-d-x64-1_66.a" />
-					<Add library="libboost_filesystem-mgw51-mt-d-x64-1_66.a" />
-					<Add library="libboost_program_options-mgw51-mt-d-x64-1_66.a" />
+					<Add library="libboost_system-mgw92-mt-d-x64-1_72.a" />
+					<Add library="libboost_filesystem-mgw92-mt-d-x64-1_72.a" />
+					<Add library="libboost_program_options-mgw92-mt-d-x64-1_72.a" />
 				</Linker>
 			</Target>
 			<Target title="Release">
@@ -30,9 +30,9 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
-					<Add library="libboost_system-mgw51-mt-x64-1_66.a" />
-					<Add library="libboost_filesystem-mgw51-mt-x64-1_66.a" />
-					<Add library="libboost_program_options-mgw51-mt-x64-1_66.a" />
+					<Add library="libboost_system-mgw92-mt-x64-1_72.a" />
+					<Add library="libboost_filesystem-mgw92-mt-x64-1_72.a" />
+					<Add library="libboost_program_options-mgw92-mt-x64-1_72.a" />
 				</Linker>
 			</Target>
 		</Build>
@@ -44,9 +44,6 @@
 		<Unit filename="Settings.hpp" />
 		<Unit filename="main.cpp" />
 		<Extensions>
-			<code_completion />
-			<envvars />
-			<debugger />
 			<lib_finder disable_auto="1" />
 		</Extensions>
 	</Project>
