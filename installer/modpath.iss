@@ -1,11 +1,15 @@
 // ----------------------------------------------------------------------------
 //
 // Inno Setup Ver:	5.4.2
-// Script Version:	1.4.2
+// Script Version:	1.4.2 (modified)
 // Author:			Jared Breland <jbreland@legroom.net>
 // Homepage:		http://www.legroom.net/software
 // License:			GNU Lesser General Public License (LGPL), version 3
 //						http://www.gnu.org/licenses/lgpl.html
+//
+// Note modifications to original script:
+//  - Change ModPathType constant to a function
+//  - Rename IsTaskSelected to new name WizardIsTaskSelected
 //
 // Script Function:
 //	Allow modification of environmental path directly from Inno Setup installers
@@ -23,13 +27,21 @@
 //
 //	Add the following to the end of your [Code] section
 //	ModPathName defines the name of the task defined above
-//	ModPathType defines whether the 'user' or 'system' path will be modified;
-//		this will default to user if anything other than system is set
+//	ModPathType() function defines whether the 'user' or 'system' path will be modified;
+//		this will default to user if anything other than system is returned
 //	setArrayLength must specify the total number of dirs to be added
 //	Result[0] contains first directory, Result[1] contains second, etc.
 //		const
 //			ModPathName = 'modifypath';
-//			ModPathType = 'user';
+//
+//    function ModPathType(): String;
+//      begin
+//        if IsAdminInstallMode() then begin
+//          Result := 'system';
+//        end else begin
+//          Result := 'user';
+//        end;
+//    end;
 //
 //		function ModPathDir(): TArrayOfString;
 //		begin
@@ -54,8 +66,8 @@ var
 
 begin
 	// Get constants from main script and adjust behavior accordingly
-	// ModPathType MUST be 'system' or 'user'; force 'user' if invalid
-	if ModPathType = 'system' then begin
+	// ModPathType() function result MUST be 'system' or 'user'; force 'user' if invalid
+	if ModPathType() = 'system' then begin
 		regroot := HKEY_LOCAL_MACHINE;
 		regpath := 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment';
 	end else begin
@@ -170,7 +182,7 @@ var
 begin
 	taskname := ModPathName;
 	if CurStep = ssPostInstall then
-		if IsTaskSelected(taskname) then
+		if WizardIsTaskSelected(taskname) then
 			ModPath();
 end;
 
@@ -211,7 +223,7 @@ var
 	taskname:	String;
 begin
 	taskname := ModPathName;
-	if IsTaskSelected(taskname) and not UsingWinNT() then begin
+	if WizardIsTaskSelected(taskname) and not UsingWinNT() then begin
 		Result := True;
 	end else begin
 		Result := False;
