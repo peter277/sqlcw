@@ -44,13 +44,13 @@ Source: "X:\Projects\sqlcw\releases\1.1\sqlcw-1.1-win64\examples\*"; DestDir: "{
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+;Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{group}\{cm:ProgramOnTheWeb,{#MyAppName}}"; Filename: "{#MyAppURL}"
 Name: "{group}\Examples"; Filename: "{app}\examples"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 
 [Tasks]
-Name: modifypath; Description: &Add application directory to your environmental path
+Name: modifypath; Description: &Add application executable to environmental path
 
 [Code]
 

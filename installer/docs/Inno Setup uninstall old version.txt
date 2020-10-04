@@ -1,0 +1,6 @@
+
+See:
+
+https://stackoverflow.com/questions/2000296/inno-setup-how-to-automatically-uninstall-previous-installed-version
+
+https://blog.lextudio.com/inno-setup-script-sample-for-version-comparison-advanced-version-c398d0ef18ad
