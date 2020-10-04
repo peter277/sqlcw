@@ -43,6 +43,9 @@
 		<Unit filename="LineBuffer.hpp" />
 		<Unit filename="Settings.hpp" />
 		<Unit filename="main.cpp" />
+		<Unit filename="sqlcw.rc">
+			<Option compilerVar="WINDRES" />
+		</Unit>
 		<Extensions>
 			<lib_finder disable_auto="1" />
 		</Extensions>

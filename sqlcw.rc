@@ -1,0 +1,27 @@
+// See reference: https://docs.microsoft.com/en-us/windows/win32/menurc/versioninfo-resource
+
+sqlcwIcon ICON "sqlcw.ico"
+
+1 VERSIONINFO
+FILEVERSION     1,1,0,0
+PRODUCTVERSION  1,1,0,0
+{
+  BLOCK "StringFileInfo" // Information dependent on a particular language and code page
+  {
+    BLOCK "000904E4"
+    {
+      //VALUE "CompanyName", "Company Name"
+      VALUE "FileDescription", "SQL Code Wrapper command-line executable"
+      VALUE "FileVersion", "1.1"
+      VALUE "InternalName", "sqlcw"
+      VALUE "LegalCopyright", "GNU General Public License v3"
+      VALUE "OriginalFilename", "sqlcw.exe"
+      VALUE "ProductName", "SQL Code Wrapper"
+      VALUE "ProductVersion", "1.1"
+    }
+  }
+  BLOCK "VarFileInfo" // Information NOT dependent on a particular language and code page
+  {
+    VALUE "Translation", 0x0009, 0x04E4 // English with 0x04E4/Windows-1252 character set
+  }
+}
