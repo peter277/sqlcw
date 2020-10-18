@@ -35,6 +35,9 @@ ArchitecturesAllowed=x64
 ; 64-bit Program Files directory and the 64-bit view of the registry.
 ArchitecturesInstallIn64BitMode=x64
 
+; Specify a particular icon file to display for the Uninstall entry in the Add/Remove Programs Control Panel applet
+UninstallDisplayIcon={app}\bin\{#MyAppExeName}
+
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
