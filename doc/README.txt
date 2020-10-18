@@ -21,9 +21,13 @@ License                  : GNU General Public License version 3.0 (GPLv3)
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --------------------------------------------------------------------------------
-    SQLCW is based in part on the work of the Boost C++ Libraries project,
-    distributed under the Boost Software License Version 1.0 (a copy is included
-    with the source code).
+SQLCW incorporates components based on the work of:
+
+    The Boost C++ Libraries project, distributed under the Boost Software
+    License Version 1.0 (a copy is included with the source code).
+
+    Application executable icon made by Becris from Flaticon.com
+    (see https://www.flaticon.com/authors/becris ).
 --------------------------------------------------------------------------------
 
 SQLCW is a lightweight preprocessor to enable wrapping SQL statements within a

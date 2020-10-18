@@ -2,6 +2,7 @@
 #define MyAppVersion "1.1"
 #define MyAppURL "https://sourceforge.net/projects/sqlcw/"
 #define MyAppExeName "sqlcw.exe"
+#define ProjectDir "X:\Projects\sqlcw"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
@@ -16,7 +17,7 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
-LicenseFile=X:\Projects\sqlcw\releases\1.1\sqlcw-1.1-source\LICENSE_GPL-3.0.txt
+LicenseFile={#ProjectDir}\doc\LICENSE_GPL-3.0.txt
 ; Remove the following line to run in administrative install mode (install for all users.)
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog commandline
@@ -38,9 +39,9 @@ ArchitecturesInstallIn64BitMode=x64
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "X:\Projects\sqlcw\releases\1.1\sqlcw-1.1-win64\sqlcw.exe"; DestDir: "{app}\bin"; Flags: ignoreversion
-Source: "X:\Projects\sqlcw\releases\1.1\sqlcw-1.1-win64\README.txt"; DestDir: "{app}"; Flags: ignoreversion
-Source: "X:\Projects\sqlcw\releases\1.1\sqlcw-1.1-win64\examples\*"; DestDir: "{app}\examples"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#ProjectDir}\bin\Release\sqlcw.exe"; DestDir: "{app}\bin"; Flags: ignoreversion
+Source: "{#ProjectDir}\doc\README.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#ProjectDir}\doc\examples\*"; DestDir: "{app}\examples"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
@@ -48,6 +49,7 @@ Source: "X:\Projects\sqlcw\releases\1.1\sqlcw-1.1-win64\examples\*"; DestDir: "{
 Name: "{group}\{cm:ProgramOnTheWeb,{#MyAppName}}"; Filename: "{#MyAppURL}"
 Name: "{group}\Examples"; Filename: "{app}\examples"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
+Name: "{group}\{#MyAppName} Readme"; Filename: "{app}\README.txt"
 
 [Tasks]
 Name: modifypath; Description: &Add application executable to environmental path
