@@ -14,11 +14,6 @@
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>
-				<Linker>
-					<Add library="libboost_system-mgw92-mt-d-x64-1_72.a" />
-					<Add library="libboost_filesystem-mgw92-mt-d-x64-1_72.a" />
-					<Add library="libboost_program_options-mgw92-mt-d-x64-1_72.a" />
-				</Linker>
 			</Target>
 			<Target title="Release">
 				<Option output="bin/Release/sqlcw" prefix_auto="1" extension_auto="1" />
@@ -26,13 +21,10 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
-					<Add option="-O2" />
+					<Add option="-O3" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
-					<Add library="libboost_system-mgw92-mt-x64-1_72.a" />
-					<Add library="libboost_filesystem-mgw92-mt-x64-1_72.a" />
-					<Add library="libboost_program_options-mgw92-mt-x64-1_72.a" />
 				</Linker>
 			</Target>
 		</Build>
@@ -40,6 +32,11 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
+		<Linker>
+			<Add library="libboost_system-mt.a" />
+			<Add library="libboost_filesystem-mt.a" />
+			<Add library="libboost_program_options-mt.a" />
+		</Linker>
 		<Unit filename="LineBuffer.hpp" />
 		<Unit filename="Settings.hpp" />
 		<Unit filename="main.cpp" />
