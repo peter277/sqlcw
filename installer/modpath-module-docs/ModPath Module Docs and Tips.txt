@@ -1,0 +1,4 @@
+
+* ModifyPath module docs: https://web.archive.org/web/20251011062534/https://www.legroom.net/software/modpath
+* Tips to modify PATH env in InnoSetup: https://stackoverflow.com/questions/3304463/how-do-i-modify-the-path-environment-variable-when-running-an-inno-setup-install
+* Example installer using ModPath - Docker Toolbox: https://github.com/docker/toolbox/tree/master/windows

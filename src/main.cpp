@@ -77,10 +77,11 @@ int main(int argc, char **argv)
         }
 
         if (vmSettings.count("version")) {
-            cout << "SQLCW - SQL CODE WRAPPER, VERSION 1.1" << endl
-                 << "Release Date : 5 July 2019" << endl
-                 << "Website      : http://sqlcw.sourceforge.net/" << endl
-                 << "License      : GNU General Public License version 3.0 (GPLv3)" << endl
+            cout << "SQLCW - SQL CODE WRAPPER, VERSION " << BUILD_VERSION_STR << endl
+                 << "Build Date     : " << BUILD_DATE << endl
+                 << "Build Compiler : " << BUILD_COMPILER << endl
+                 << "Website        : http://sqlcw.sourceforge.net/" << endl
+                 << "License        : GNU General Public License version 3.0 (GPLv3)" << endl
             ;
             return 0;
         }
