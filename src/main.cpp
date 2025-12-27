@@ -81,7 +81,7 @@ int main(int argc, char **argv)
                  << "Build Date     : " << BUILD_DATE << endl
                  << "Build Compiler : " << BUILD_COMPILER << endl
                  << "Website        : http://sqlcw.sourceforge.net/" << endl
-                 << "License        : GNU General Public License version 3.0 (GPLv3)" << endl
+                 << "License        : MIT" << endl
             ;
             return 0;
         }
