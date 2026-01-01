@@ -14,13 +14,25 @@ permissions:
 
 jobs:
   release:
-    runs-on: windows-latest     # Use Windows runner (needed for Windows-specific Maven builds)
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+          - os: ubuntu-latest
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      ChocolateyDisableProgress: 'true'
 
     steps:
-      # STEP: Set up Pandoc (for markdown to HTML conversion)
-      - name: Set up Pandoc
-        id: pandoc-install
-        run: choco install pandoc
+      # STEP: Install dependencies for Windows
+      - name: Install dependencies for Windows
+        id: install-windows-dependencies
+        if: runner.os == 'Windows'
+        run: |
+          choco install pandoc     # Set up Pandoc (for markdown to HTML conversion)
+          choco install innosetup  # Set up Inno Setup (for building Windows installers)
 
       #- name: Set up Pandoc
       #  id: pandoc
@@ -28,14 +40,10 @@ jobs:
       #  with:
       #    pandoc-version: 'latest'
 
-      # STEP: Set up Inno Setup (for building Windows installers)
-      - name: Set up Inno Setup
-        id: inno-setup-install
-        run: choco install innosetup
-
-    # STEP: Set up MSYS2 environment
+      # STEP: Set up MSYS2 environment
       - name: Set up MSYS2
         id: msys2
+        if: runner.os == 'Windows'
         uses: msys2/setup-msys2@v2
         with:
           update: true
@@ -49,6 +57,20 @@ jobs:
             mingw-w64-ucrt-x86_64-boost
         env:
           MSYS2_PATH_TYPE: inherit
+
+      # STEP: Install dependencies for Linux
+      - name: Install dependencies for Linux
+        id: install-linux-dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            pandoc \
+            zip \
+            make \
+            gcc \
+            g++ \
+            libboost-all-dev
 
       # STEP: Get the repository code
       - name: Checkout code
@@ -75,11 +97,33 @@ jobs:
           echo "is_tagged=$IS_TAGGED" >> $GITHUB_OUTPUT
           echo "Version: $VERSION (tagged: $IS_TAGGED)"
       
+          if [[ "$VERSION" =~ ^v([0-9]+)\.([0-9]+)$ ]]; then
+            # vX.Y format
+            echo "ENV_BUILD_VERSION_MAJOR=${BASH_REMATCH[1]}" >> $GITHUB_ENV
+            echo "ENV_BUILD_VERSION_MINOR=${BASH_REMATCH[2]}" >> $GITHUB_ENV
+            echo "Set version environment variables:\nENV_BUILD_VERSION_MAJOR=$ENV_BUILD_VERSION_MAJOR\nENV_BUILD_VERSION_MINOR=$ENV_BUILD_VERSION_MINOR\n"
+          elif [[ "$VERSION" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            # vX.Y.Z format
+            echo "ENV_BUILD_VERSION_MAJOR=${BASH_REMATCH[1]}" >> $GITHUB_ENV
+            echo "ENV_BUILD_VERSION_MINOR=${BASH_REMATCH[2]}" >> $GITHUB_ENV
+            echo "ENV_BUILD_VERSION_PATCH=${BASH_REMATCH[3]}" >> $GITHUB_ENV
+            echo "Set version environment variables:\nENV_BUILD_VERSION_MAJOR=$ENV_BUILD_VERSION_MAJOR\nENV_BUILD_VERSION_MINOR=$ENV_BUILD_VERSION_MINOR\nENV_BUILD_VERSION_PATCH=$ENV_BUILD_VERSION_PATCH\n"
+          else
+            echo "$VERSION does not match vX.Y or vX.Y.Z, skipping setting build version env variables"
+          fi
+
       # STEP: Build
-      - name: Build project
+      - name: Build project on Windows
+        if: runner.os == 'Windows'
         shell: msys2 {0}
         run: |
           export PATH="$PATH:/c/Program Files/Pandoc:/c/Program Files (x86)/Inno Setup 6/"
+          make clean all
+
+      - name: Build project on Linux
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
           make clean all
       
       # STEP: Create GitHub release
@@ -103,6 +147,8 @@ jobs:
             build/sqlcw-*.zip
             build/sqlcw-*-installer.exe
           
+          fail_on_unmatched_files: false
+
           # Build releases are marked as pre-release, tagged releases are stable
           prerelease: ${{ steps.version.outputs.is_tagged != 'true' }}
         env:
