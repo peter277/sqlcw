@@ -80,7 +80,7 @@ int main(int argc, char **argv)
             cout << "SQLCW - SQL CODE WRAPPER, VERSION " << BUILD_VERSION_STR << endl
                  << "Build Date     : " << BUILD_DATE << endl
                  << "Build Compiler : " << BUILD_COMPILER << endl
-                 << "Website        : http://sqlcw.sourceforge.net/" << endl
+                 << "Website        : https://github.com/peter277/sqlcw" << endl
                  << "License        : MIT" << endl
             ;
             return 0;
