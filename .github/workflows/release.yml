@@ -1,0 +1,109 @@
+name: Create Release
+
+# TRIGGERS: When this workflow runs
+on:
+  push:
+    branches:
+      - main                    # Run on every push to main branch
+      - ci/automated-releases
+  workflow_dispatch:            # Allow manual triggering from Actions tab
+
+# PERMISSIONS: What this workflow can do
+permissions:
+  contents: write               # Required to create releases and push tags
+
+jobs:
+  release:
+    runs-on: windows-latest     # Use Windows runner (needed for Windows-specific Maven builds)
+
+    steps:
+      # STEP: Set up Pandoc (for markdown to HTML conversion)
+      - name: Set up Pandoc
+        id: pandoc-install
+        run: choco install pandoc
+
+      #- name: Set up Pandoc
+      #  id: pandoc
+      #  uses: r-lib/actions/setup-pandoc@v2
+      #  with:
+      #    pandoc-version: 'latest'
+
+      # STEP: Set up Inno Setup (for building Windows installers)
+      - name: Set up Inno Setup
+        id: inno-setup-install
+        run: choco install innosetup
+
+    # STEP: Set up MSYS2 environment
+      - name: Set up MSYS2
+        id: msys2
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          msystem: ucrt64
+          install: >-
+            curl
+            git
+            zip
+            make
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-boost
+        env:
+          MSYS2_PATH_TYPE: inherit
+
+      # STEP: Get the repository code
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0        # Fetch full history so we can count all commits
+      
+      # STEP: Determine version (either from tag like v0.1.0, otherwise dev prerelease with commit count like dev.123)
+      - name: Determine version
+        id: version
+        shell: bash
+        run: |
+          TAG=$(git tag --points-at HEAD | grep '^v' | sort -V | tail -n 1 || true)
+          if [[ -n "$TAG" ]]; then
+            # Tagged production release: use version from tag (e.g. v0.1.0)
+            VERSION="${TAG}"
+            IS_TAGGED=true
+          else
+            # Development build: use version dev.<commit count>
+            VERSION="dev.$(git rev-list --count HEAD)"
+            IS_TAGGED=false
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "is_tagged=$IS_TAGGED" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION (tagged: $IS_TAGGED)"
+      
+      # STEP: Build
+      - name: Build project
+        shell: msys2 {0}
+        run: |
+          export PATH="$PATH:/c/Program Files/Pandoc:/c/Program Files (x86)/Inno Setup 6/"
+          make clean all
+      
+      # STEP: Create GitHub release
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          # Tag name: use existing tag (v0.1.0) or created build number tag (dev.123)
+          tag_name: ${{ steps.version.outputs.version }}
+          
+          # Release title
+          name: ${{ steps.version.outputs.version }}
+          
+          # Release description
+          body: |
+            ${{ steps.version.outputs.is_tagged == 'true' && 'Release' || 'Automated build' }} for version ${{ steps.version.outputs.version }}
+            
+            Commit: ${{ github.sha }}
+          
+          # Upload relevant build artifacts
+          files: |
+            build/sqlcw-*.zip
+            build/sqlcw-*-installer.exe
+          
+          # Build releases are marked as pre-release, tagged releases are stable
+          prerelease: ${{ steps.version.outputs.is_tagged != 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
