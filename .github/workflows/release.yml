@@ -22,14 +22,13 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
-    env:
-      ChocolateyDisableProgress: 'true'
-
     steps:
       # STEP: Install dependencies for Windows
       - name: Install dependencies for Windows
         id: install-windows-dependencies
         if: runner.os == 'Windows'
+        env:
+          ChocolateyDisableProgress: 'true'
         run: |
           choco install pandoc     # Set up Pandoc (for markdown to HTML conversion)
           choco install innosetup  # Set up Inno Setup (for building Windows installers)
