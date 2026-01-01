@@ -1,10 +1,11 @@
 # sqlcw: SQL Code Wrapper - Build Configuration
 
 # Directory structure
-BUILD_DIR := build
-SRC_DIR := src
-OBJ_DIR = $(BUILD_DIR)/obj
+BUILD_DIR := $(CURDIR)/build
+SRC_DIR := $(CURDIR)/src
+OBJ_DIR := $(BUILD_DIR)/obj
 BUILD_INFO_FILE := $(BUILD_DIR)/build_info.h
+PACKAGE_DIR := $(BUILD_DIR)/package
 
 # Discover all C++ source files in the source directory
 SOURCE_FILES := $(wildcard $(SRC_DIR)/*.cpp)
@@ -36,11 +37,13 @@ BUILD_VERSION_STR := $(if $(and $(ENV_BUILD_VERSION_MAJOR),$(ENV_BUILD_VERSION_M
 # Platform-specific configuration
 ifdef MSYSTEM
 	# Building on Windows (MSYS2/MinGW)
+	PLATFORM := win64
 	TARGET := $(BUILD_DIR)/sqlcw.exe
 	# Boost libraries on Windows use -mt suffix (multi-threaded)
 	LIBS := $(addsuffix -mt, $(addprefix -l,$(BOOST_LIBS)))
 else
 	# Building on Linux/Unix
+	PLATFORM := linux_$(shell uname -m)
 	TARGET := $(BUILD_DIR)/sqlcw
 	LIBS := $(addprefix -l,$(BOOST_LIBS))
 endif
@@ -94,9 +97,22 @@ else
 WINDRES_OBJECT_FILE :=
 endif
 
-# Placeholder for packaging step (e.g., creating zip/tarball)
+# Package application executable and documentation for distribution
 package: $(TARGET)
-	@echo "Generating package..."
+	@echo "Generating documentation and creating distribution packages..."
+	BUILD_VERSION=$(BUILD_VERSION_STR) pandoc README.md -o $(BUILD_DIR)/README.html --embed-resources --standalone  --lua-filter=scripts/pandoc-link-rewriter.lua
+	BUILD_VERSION=$(BUILD_VERSION_STR) pandoc LICENSE.md -o $(BUILD_DIR)/LICENSE.html --embed-resources --standalone  --lua-filter=scripts/pandoc-link-rewriter.lua
+
+	mkdir -p $(PACKAGE_DIR)/bin
+	cp $(TARGET) $(PACKAGE_DIR)/bin
+	cp $(BUILD_DIR)/README.html $(BUILD_DIR)/LICENSE.html -t $(PACKAGE_DIR)
+	cp -r doc/library-licenses doc/examples -t $(PACKAGE_DIR)
+	cd $(PACKAGE_DIR) && zip -r $(BUILD_DIR)/sqlcw-$(BUILD_VERSION_STR)-$(PLATFORM).zip .
+	rm -rf $(PACKAGE_DIR)
+
+ifeq ($(OS),Windows_NT)
+	iscc -Obuild -Q installer/sqlcw_installer.iss
+endif
 
 # Remove all generated files
 clean:

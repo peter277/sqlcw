@@ -1,8 +1,17 @@
 #define MyAppName "sqlcw"
-#define MyAppVersion "1.1"
-#define MyAppURL "https://sourceforge.net/projects/sqlcw/"
+#define MyAppURL "https://github.com/peter277/sqlcw"
 #define MyAppExeName "sqlcw.exe"
-#define ProjectDir "X:\Projects\sqlcw"
+#define ProjectDir ExtractFileDir(ExtractFileDir(SourcePath))
+
+#define VerMajor GetEnv("ENV_BUILD_VERSION_MAJOR")
+#define VerMinor GetEnv("ENV_BUILD_VERSION_MINOR")
+#define VerPatch GetEnv("ENV_BUILD_VERSION_PATCH") != "" ? GetEnv("ENV_BUILD_VERSION_PATCH") : "0"
+
+#if VerMajor != "" && VerMinor != ""
+  #define MyAppVersion VerMajor + "." + VerMinor + "." + VerPatch
+#else
+  #define MyAppVersion "dev"
+#endif
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
@@ -11,13 +20,14 @@ AppId={{0D0F4C50-15D5-4CDF-A7C7-316375B5359A}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} {#MyAppVersion}
+;AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
-LicenseFile={#ProjectDir}\doc\LICENSE_GPL-3.0.txt
+LicenseFile={#ProjectDir}\doc\LICENSE.txt
 ; Remove the following line to run in administrative install mode (install for all users.)
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog commandline
@@ -27,13 +37,13 @@ SolidCompression=yes
 WizardStyle=modern
 ChangesEnvironment=true
 
-; "ArchitecturesAllowed=x64" specifies that Setup cannot run on
+; "ArchitecturesAllowed=x64compatible" specifies that Setup cannot run on
 ; anything but x64.
-ArchitecturesAllowed=x64
-; "ArchitecturesInstallIn64BitMode=x64" requests that the install be
+ArchitecturesAllowed=x64compatible
+; "ArchitecturesInstallIn64BitMode=x64compatible" requests that the install be
 ; done in "64-bit mode" on x64, meaning it should use the native
 ; 64-bit Program Files directory and the 64-bit view of the registry.
-ArchitecturesInstallIn64BitMode=x64
+ArchitecturesInstallIn64BitMode=x64compatible
 
 ; Specify a particular icon file to display for the Uninstall entry in the Add/Remove Programs Control Panel applet
 UninstallDisplayIcon={app}\bin\{#MyAppExeName}
@@ -42,9 +52,11 @@ UninstallDisplayIcon={app}\bin\{#MyAppExeName}
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "{#ProjectDir}\bin\Release\sqlcw.exe"; DestDir: "{app}\bin"; Flags: ignoreversion
-Source: "{#ProjectDir}\doc\README.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#ProjectDir}\build\sqlcw.exe"; DestDir: "{app}\bin"; Flags: ignoreversion
+Source: "{#ProjectDir}\build\README.html"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#ProjectDir}\build\LICENSE.html"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#ProjectDir}\doc\examples\*"; DestDir: "{app}\examples"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#ProjectDir}\doc\library-licenses\*"; DestDir: "{app}\library-licenses"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
@@ -52,7 +64,8 @@ Source: "{#ProjectDir}\doc\examples\*"; DestDir: "{app}\examples"; Flags: ignore
 Name: "{group}\{cm:ProgramOnTheWeb,{#MyAppName}}"; Filename: "{#MyAppURL}"
 Name: "{group}\Examples"; Filename: "{app}\examples"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{group}\{#MyAppName} Readme"; Filename: "{app}\README.txt"
+Name: "{group}\{#MyAppName} Readme"; Filename: "{app}\README.html"
+Name: "{group}\{#MyAppName} License"; Filename: "{app}\LICENSE.html"
 
 [Tasks]
 Name: modifypath; Description: &Add application executable to environmental path
