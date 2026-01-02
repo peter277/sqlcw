@@ -3,9 +3,8 @@ name: Create Release
 # TRIGGERS: When this workflow runs
 on:
   push:
-    branches:
-      - main                    # Run on every push to main branch
-      - ci/automated-releases
+    tags:
+      - 'v*'                    # Trigger on version tags like v0.1.0
   workflow_dispatch:            # Allow manual triggering from Actions tab
 
 # PERMISSIONS: What this workflow can do
@@ -25,21 +24,13 @@ jobs:
     steps:
       # STEP: Install dependencies for Windows
       - name: Install dependencies for Windows
-        id: install-windows-dependencies
         if: runner.os == 'Windows'
         run: |
           choco install --no-progress pandoc     # Set up Pandoc (for markdown to HTML conversion)
           choco install --no-progress innosetup  # Set up Inno Setup (for building Windows installers)
 
-      #- name: Set up Pandoc
-      #  id: pandoc
-      #  uses: r-lib/actions/setup-pandoc@v2
-      #  with:
-      #    pandoc-version: 'latest'
-
       # STEP: Set up MSYS2 environment
       - name: Set up MSYS2 (Windows only)
-        id: msys2
         if: runner.os == 'Windows'
         uses: msys2/setup-msys2@v2
         with:
@@ -57,7 +48,6 @@ jobs:
 
       # STEP: Install dependencies for Linux
       - name: Install dependencies for Linux
-        id: install-linux-dependencies
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
@@ -75,14 +65,17 @@ jobs:
         with:
           fetch-depth: 0        # Fetch full history so we can count all commits
       
-      # STEP: Determine version (either from tag like v0.1.0, otherwise dev prerelease with commit count like dev.123)
+      # STEP: Determine version
+      # - Tagged releases: use version from tag (e.g. v0.1.0)
+      # - Dev builds: use dev.<commit_count>
+      # - Parse version components into environment variables for build system
       - name: Determine version
         id: version
         shell: bash
         run: |
           TAG=$(git tag --points-at HEAD | grep '^v' | sort -V | tail -n 1 || true)
           BUILD_COMMIT_COUNT=$(git rev-list --count HEAD)
-          
+
           if [[ -n "$TAG" ]]; then
             # Tagged production release: use version from tag (e.g. v0.1.0)
             VERSION="${TAG}"
@@ -96,22 +89,23 @@ jobs:
           echo "is_tagged=$IS_TAGGED" >> $GITHUB_OUTPUT
           echo "Version: $VERSION (tagged: $IS_TAGGED)"
       
+          # Parse version components into environment variables for build system
           if [[ "$VERSION" =~ ^v([0-9]+)\.([0-9]+)$ ]]; then
             # vX.Y format
             echo "ENV_BUILD_VERSION_MAJOR=${BASH_REMATCH[1]}" >> $GITHUB_ENV
             echo "ENV_BUILD_VERSION_MINOR=${BASH_REMATCH[2]}" >> $GITHUB_ENV
-            echo "Set version environment variables:\nENV_BUILD_VERSION_MAJOR=$ENV_BUILD_VERSION_MAJOR\nENV_BUILD_VERSION_MINOR=$ENV_BUILD_VERSION_MINOR\n"
+            echo -e "Set version environment variables:\nENV_BUILD_VERSION_MAJOR=${BASH_REMATCH[1]}\nENV_BUILD_VERSION_MINOR=${BASH_REMATCH[2]}\n"
           elif [[ "$VERSION" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
             # vX.Y.Z format
             echo "ENV_BUILD_VERSION_MAJOR=${BASH_REMATCH[1]}" >> $GITHUB_ENV
             echo "ENV_BUILD_VERSION_MINOR=${BASH_REMATCH[2]}" >> $GITHUB_ENV
             echo "ENV_BUILD_VERSION_PATCH=${BASH_REMATCH[3]}" >> $GITHUB_ENV
-            echo "Set version environment variables:\nENV_BUILD_VERSION_MAJOR=$ENV_BUILD_VERSION_MAJOR\nENV_BUILD_VERSION_MINOR=$ENV_BUILD_VERSION_MINOR\nENV_BUILD_VERSION_PATCH=$ENV_BUILD_VERSION_PATCH\n"
+            echo -e "Set version environment variables:\nENV_BUILD_VERSION_MAJOR=${BASH_REMATCH[1]}\nENV_BUILD_VERSION_MINOR=${BASH_REMATCH[2]}\nENV_BUILD_VERSION_PATCH=${BASH_REMATCH[3]}\n"
           else
             # dev.X format
             echo "ENV_BUILD_VERSION_MAJOR=dev" >> $GITHUB_ENV
             echo "ENV_BUILD_VERSION_MINOR=${BUILD_COMMIT_COUNT}" >> $GITHUB_ENV
-            echo "$VERSION does not match vX.Y or vX.Y.Z, set version environment variables:\nENV_BUILD_VERSION_MAJOR=$ENV_BUILD_VERSION_MAJOR\nENV_BUILD_VERSION_MINOR=$ENV_BUILD_VERSION_MINOR\n"
+            echo -e "$VERSION does not match vX.Y or vX.Y.Z, set version environment variables:\nENV_BUILD_VERSION_MAJOR=dev\nENV_BUILD_VERSION_MINOR=${BUILD_COMMIT_COUNT}\n"
           fi
 
       # STEP: Build
@@ -140,7 +134,7 @@ jobs:
           
           # Release description
           body: |
-            ${{ steps.version.outputs.is_tagged == 'true' && 'Release' || 'Automated build' }} for version ${{ steps.version.outputs.version }}
+            ${{ steps.version.outputs.is_tagged == 'true' && 'Production release' || 'Development build' }} for version ${{ steps.version.outputs.version }}
             
             Commit: ${{ github.sha }}
           
