@@ -5,7 +5,7 @@ sqlcwIcon ICON "sqlcw.ico"
 #include "build_info.h"
 
 1 VERSIONINFO
-FILEVERSION     BUILD_VERSION_MAJOR,BUILD_VERSION_MINOR,BUILD_VERSION_PATCH,0
+FILEVERSION     BUILD_FILEVERSION_RC
 //PRODUCTVERSION  BUILD_VERSION_MAJOR,BUILD_VERSION_MINOR,BUILD_VERSION_PATCH,0
 {
   BLOCK "StringFileInfo" // Information dependent on a particular language and code page
@@ -16,7 +16,7 @@ FILEVERSION     BUILD_VERSION_MAJOR,BUILD_VERSION_MINOR,BUILD_VERSION_PATCH,0
       VALUE "FileDescription", "SQL Code Wrapper command-line executable"
       //VALUE "FileVersion", BUILD_VERSION_STR
       VALUE "InternalName", "sqlcw"
-      VALUE "LegalCopyright", "GNU General Public License v3"
+      VALUE "LegalCopyright", "MIT License"
       VALUE "OriginalFilename", "sqlcw.exe"
       VALUE "ProductName", "SQL Code Wrapper"
       VALUE "ProductVersion", BUILD_VERSION_STR

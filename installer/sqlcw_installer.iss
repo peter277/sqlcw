@@ -7,9 +7,15 @@
 #define VerMinor GetEnv("ENV_BUILD_VERSION_MINOR")
 #define VerPatch GetEnv("ENV_BUILD_VERSION_PATCH") != "" ? GetEnv("ENV_BUILD_VERSION_PATCH") : "0"
 
-#if VerMajor != "" && VerMinor != ""
+// Determine MyAppVersion
+#if (VerMajor == "dev") && (VerMinor != "")
+  // Special dev case: dev.<minor>
+  #define MyAppVersion "dev." + VerMinor
+#elif (VerMajor != "") && (VerMinor != "")
+  // Normal semantic version
   #define MyAppVersion VerMajor + "." + VerMinor + "." + VerPatch
 #else
+  // Fallback
   #define MyAppVersion "dev"
 #endif
 

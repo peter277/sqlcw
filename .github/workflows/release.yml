@@ -81,13 +81,15 @@ jobs:
         shell: bash
         run: |
           TAG=$(git tag --points-at HEAD | grep '^v' | sort -V | tail -n 1 || true)
+          BUILD_COMMIT_COUNT=$(git rev-list --count HEAD)
+          
           if [[ -n "$TAG" ]]; then
             # Tagged production release: use version from tag (e.g. v0.1.0)
             VERSION="${TAG}"
             IS_TAGGED=true
           else
             # Development build: use version dev.<commit count>
-            VERSION="dev.$(git rev-list --count HEAD)"
+            VERSION="dev.${BUILD_COMMIT_COUNT}"
             IS_TAGGED=false
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
@@ -106,7 +108,10 @@ jobs:
             echo "ENV_BUILD_VERSION_PATCH=${BASH_REMATCH[3]}" >> $GITHUB_ENV
             echo "Set version environment variables:\nENV_BUILD_VERSION_MAJOR=$ENV_BUILD_VERSION_MAJOR\nENV_BUILD_VERSION_MINOR=$ENV_BUILD_VERSION_MINOR\nENV_BUILD_VERSION_PATCH=$ENV_BUILD_VERSION_PATCH\n"
           else
-            echo "$VERSION does not match vX.Y or vX.Y.Z, skipping setting build version env variables"
+            # dev.X format
+            echo "ENV_BUILD_VERSION_MAJOR=dev" >> $GITHUB_ENV
+            echo "ENV_BUILD_VERSION_MINOR=${BUILD_COMMIT_COUNT}" >> $GITHUB_ENV
+            echo "$VERSION does not match vX.Y or vX.Y.Z, set version environment variables:\nENV_BUILD_VERSION_MAJOR=$ENV_BUILD_VERSION_MAJOR\nENV_BUILD_VERSION_MINOR=$ENV_BUILD_VERSION_MINOR\n"
           fi
 
       # STEP: Build

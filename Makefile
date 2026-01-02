@@ -26,8 +26,34 @@ BUILD_VERSION_MAJOR := $(or $(ENV_BUILD_VERSION_MAJOR),0)
 BUILD_VERSION_MINOR := $(or $(ENV_BUILD_VERSION_MINOR),0)
 BUILD_VERSION_PATCH := $(or $(ENV_BUILD_VERSION_PATCH),0)
 
-# Generate version string: "X.Y.Z" if environment vars are set, otherwise "dev"
-BUILD_VERSION_STR := $(if $(and $(ENV_BUILD_VERSION_MAJOR),$(ENV_BUILD_VERSION_MINOR)),$(BUILD_VERSION_MAJOR).$(BUILD_VERSION_MINOR).$(BUILD_VERSION_PATCH),dev)
+# Generate version string based on provided environment variables
+# - Default fallback is "dev"
+# - If ENV_BUILD_VERSION_MAJOR == "dev" and ENV_BUILD_VERSION_MINOR exists → "dev.<minor>"
+# - Else if ENV_BUILD_VERSION_MAJOR and ENV_BUILD_VERSION_MINOR exist → "X.Y.Z"
+BUILD_VERSION_STR := dev  # Default fallback
+
+# Special dev case: major="dev" and minor exists
+ifeq ($(ENV_BUILD_VERSION_MAJOR),dev)
+  ifdef ENV_BUILD_VERSION_MINOR
+    BUILD_VERSION_STR := $(BUILD_VERSION_MAJOR).$(BUILD_VERSION_MINOR)
+  endif
+
+# Normal semantic version case: major and minor exist
+else ifdef ENV_BUILD_VERSION_MAJOR
+  ifdef ENV_BUILD_VERSION_MINOR
+    BUILD_VERSION_STR := $(BUILD_VERSION_MAJOR).$(BUILD_VERSION_MINOR).$(BUILD_VERSION_PATCH)
+  endif
+endif
+# End version string generation
+
+# Assign numeric FILEVERSION for Windows .rc file
+ifeq ($(or $(filter dev,$(ENV_BUILD_VERSION_MAJOR)),$(filter dev,$(BUILD_VERSION_STR))),)
+  # Normal build: use the real version numbers
+  BUILD_FILEVERSION_RC := $(BUILD_VERSION_MAJOR),$(BUILD_VERSION_MINOR),$(BUILD_VERSION_PATCH),0
+else
+  # Development build: use all 0s
+  BUILD_FILEVERSION_RC := 0,0,0,0
+endif
 
 # Alternative: Pass build info as preprocessor definitions instead of build_info.h
 # Uncomment these lines and remove $(BUILD_INFO_FILE) from compilation prerequisites
@@ -36,16 +62,18 @@ BUILD_VERSION_STR := $(if $(and $(ENV_BUILD_VERSION_MAJOR),$(ENV_BUILD_VERSION_M
 
 # Platform-specific configuration
 ifdef MSYSTEM
-	# Building on Windows (MSYS2/MinGW)
-	PLATFORM := win64
-	TARGET := $(BUILD_DIR)/sqlcw.exe
-	# Boost libraries on Windows use -mt suffix (multi-threaded)
-	LIBS := $(addsuffix -mt, $(addprefix -l,$(BOOST_LIBS)))
+  # Building on Windows (MSYS2/MinGW)
+  PLATFORM := win64
+  TARGET := $(BUILD_DIR)/sqlcw.exe
+  # Boost libraries on Windows use -mt suffix (multi-threaded)
+  LIBS := $(addsuffix -mt, $(addprefix -l,$(BOOST_LIBS)))
+  WINDRES_OBJECT_FILE := $(OBJ_DIR)/windres.o
 else
-	# Building on Linux/Unix
-	PLATFORM := linux_$(shell uname -m)
-	TARGET := $(BUILD_DIR)/sqlcw
-	LIBS := $(addprefix -l,$(BOOST_LIBS))
+  # Building on Linux/Unix
+  PLATFORM := linux_$(shell uname -m)
+  TARGET := $(BUILD_DIR)/sqlcw
+  LIBS := $(addprefix -l,$(BOOST_LIBS))
+  WINDRES_OBJECT_FILE :=
 endif
 
 # Phony targets (not actual files)
@@ -86,15 +114,13 @@ $(BUILD_INFO_FILE): | $(BUILD_DIR)
 	@echo "#define BUILD_VERSION_MINOR $(BUILD_VERSION_MINOR)" >> $(BUILD_INFO_FILE)
 	@echo "#define BUILD_VERSION_PATCH $(BUILD_VERSION_PATCH)" >> $(BUILD_INFO_FILE)
 	@echo "#define BUILD_COMPILER \"$(BUILD_COMPILER)\"" >> $(BUILD_INFO_FILE)
+	@echo "#define BUILD_FILEVERSION_RC $(BUILD_FILEVERSION_RC)" >> $(BUILD_INFO_FILE)
 	@echo "#endif" >> $(BUILD_INFO_FILE)
 
 # Compile Windows resource file (icon, version info, etc.)
 .build-windres: $(BUILD_INFO_FILE)
 ifdef MSYSTEM
-	windres -I $(BUILD_DIR) -i $(SRC_DIR)/sqlcw.rc -o $(OBJ_DIR)/windres.o
-WINDRES_OBJECT_FILE := $(OBJ_DIR)/windres.o
-else
-WINDRES_OBJECT_FILE :=
+	windres -I $(BUILD_DIR) -i $(SRC_DIR)/sqlcw.rc -o $(WINDRES_OBJECT_FILE)
 endif
 
 # Package application executable and documentation for distribution
