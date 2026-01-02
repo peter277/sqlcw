@@ -1,15 +1,22 @@
 #define MyAppName "sqlcw"
 #define MyAppURL "https://github.com/peter277/sqlcw"
 #define MyAppExeName "sqlcw.exe"
+#define MyAppPublisher "peter277"
 #define ProjectDir ExtractFileDir(ExtractFileDir(SourcePath))
 
 #define VerMajor GetEnv("ENV_BUILD_VERSION_MAJOR")
 #define VerMinor GetEnv("ENV_BUILD_VERSION_MINOR")
 #define VerPatch GetEnv("ENV_BUILD_VERSION_PATCH") != "" ? GetEnv("ENV_BUILD_VERSION_PATCH") : "0"
 
-#if VerMajor != "" && VerMinor != ""
+// Determine MyAppVersion
+#if (VerMajor == "dev") && (VerMinor != "")
+  // Special dev case: dev.<minor>
+  #define MyAppVersion "dev." + VerMinor
+#elif (VerMajor != "") && (VerMinor != "")
+  // Normal semantic version
   #define MyAppVersion VerMajor + "." + VerMinor + "." + VerPatch
 #else
+  // Fallback
   #define MyAppVersion "dev"
 #endif
 
@@ -20,7 +27,7 @@ AppId={{0D0F4C50-15D5-4CDF-A7C7-316375B5359A}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} {#MyAppVersion}
-;AppPublisher={#MyAppPublisher}
+AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}

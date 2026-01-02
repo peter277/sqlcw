@@ -1,0 +1,151 @@
+name: Create Release
+
+# TRIGGERS: When this workflow runs
+on:
+  push:
+    tags:
+      - 'v*'                    # Trigger on version tags like v0.1.0
+  workflow_dispatch:            # Allow manual triggering from Actions tab
+
+# PERMISSIONS: What this workflow can do
+permissions:
+  contents: write               # Required to create releases and push tags
+
+jobs:
+  release:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+          - os: ubuntu-latest
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      # STEP: Install dependencies for Windows
+      - name: Install dependencies for Windows
+        if: runner.os == 'Windows'
+        run: |
+          choco install --no-progress pandoc     # Set up Pandoc (for markdown to HTML conversion)
+          choco install --no-progress innosetup  # Set up Inno Setup (for building Windows installers)
+
+      # STEP: Set up MSYS2 environment
+      - name: Set up MSYS2 (Windows only)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          msystem: ucrt64
+          install: >-
+            curl
+            git
+            zip
+            make
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-boost
+        env:
+          MSYS2_PATH_TYPE: inherit
+
+      # STEP: Install dependencies for Linux
+      - name: Install dependencies for Linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            pandoc \
+            zip \
+            make \
+            gcc \
+            g++ \
+            libboost-all-dev
+
+      # STEP: Get the repository code
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0        # Fetch full history so we can count all commits
+      
+      # STEP: Determine version
+      # - Tagged releases: use version from tag (e.g. v0.1.0)
+      # - Dev builds: use dev.<commit_count>
+      # - Parse version components into environment variables for build system
+      - name: Determine version
+        id: version
+        shell: bash
+        run: |
+          TAG=$(git tag --points-at HEAD | grep '^v' | sort -V | tail -n 1 || true)
+          BUILD_COMMIT_COUNT=$(git rev-list --count HEAD)
+
+          if [[ -n "$TAG" ]]; then
+            # Tagged production release: use version from tag (e.g. v0.1.0)
+            VERSION="${TAG}"
+            IS_TAGGED=true
+          else
+            # Development build: use version dev.<commit count>
+            VERSION="dev.${BUILD_COMMIT_COUNT}"
+            IS_TAGGED=false
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "is_tagged=$IS_TAGGED" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION (tagged: $IS_TAGGED)"
+      
+          # Parse version components into environment variables for build system
+          if [[ "$VERSION" =~ ^v([0-9]+)\.([0-9]+)$ ]]; then
+            # vX.Y format
+            echo "ENV_BUILD_VERSION_MAJOR=${BASH_REMATCH[1]}" >> $GITHUB_ENV
+            echo "ENV_BUILD_VERSION_MINOR=${BASH_REMATCH[2]}" >> $GITHUB_ENV
+            echo -e "Set version environment variables:\nENV_BUILD_VERSION_MAJOR=${BASH_REMATCH[1]}\nENV_BUILD_VERSION_MINOR=${BASH_REMATCH[2]}\n"
+          elif [[ "$VERSION" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            # vX.Y.Z format
+            echo "ENV_BUILD_VERSION_MAJOR=${BASH_REMATCH[1]}" >> $GITHUB_ENV
+            echo "ENV_BUILD_VERSION_MINOR=${BASH_REMATCH[2]}" >> $GITHUB_ENV
+            echo "ENV_BUILD_VERSION_PATCH=${BASH_REMATCH[3]}" >> $GITHUB_ENV
+            echo -e "Set version environment variables:\nENV_BUILD_VERSION_MAJOR=${BASH_REMATCH[1]}\nENV_BUILD_VERSION_MINOR=${BASH_REMATCH[2]}\nENV_BUILD_VERSION_PATCH=${BASH_REMATCH[3]}\n"
+          else
+            # dev.X format
+            echo "ENV_BUILD_VERSION_MAJOR=dev" >> $GITHUB_ENV
+            echo "ENV_BUILD_VERSION_MINOR=${BUILD_COMMIT_COUNT}" >> $GITHUB_ENV
+            echo -e "$VERSION does not match vX.Y or vX.Y.Z, set version environment variables:\nENV_BUILD_VERSION_MAJOR=dev\nENV_BUILD_VERSION_MINOR=${BUILD_COMMIT_COUNT}\n"
+          fi
+
+      # STEP: Build
+      - name: Build project on Windows
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          export PATH="$PATH:/c/Program Files/Pandoc:/c/Program Files (x86)/Inno Setup 6/"
+          make clean all
+
+      - name: Build project on Linux
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          make clean all
+      
+      # STEP: Create GitHub release
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          # Tag name: use existing tag (v0.1.0) or created build number tag (dev.123)
+          tag_name: ${{ steps.version.outputs.version }}
+          
+          # Release title
+          name: ${{ steps.version.outputs.version }}
+          
+          # Release description
+          body: |
+            ${{ steps.version.outputs.is_tagged == 'true' && 'Production release' || 'Development build' }} for version ${{ steps.version.outputs.version }}
+            
+            Commit: ${{ github.sha }}
+          
+          # Upload relevant build artifacts
+          files: |
+            build/sqlcw-*.zip
+            build/sqlcw-*-installer.exe
+          
+          fail_on_unmatched_files: false
+
+          # Build releases are marked as pre-release, tagged releases are stable
+          prerelease: ${{ steps.version.outputs.is_tagged != 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
