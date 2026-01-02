@@ -1,6 +1,7 @@
 #define MyAppName "sqlcw"
 #define MyAppURL "https://github.com/peter277/sqlcw"
 #define MyAppExeName "sqlcw.exe"
+#define MyAppPublisher "peter277"
 #define ProjectDir ExtractFileDir(ExtractFileDir(SourcePath))
 
 #define VerMajor GetEnv("ENV_BUILD_VERSION_MAJOR")
@@ -26,7 +27,7 @@ AppId={{0D0F4C50-15D5-4CDF-A7C7-316375B5359A}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} {#MyAppVersion}
-;AppPublisher={#MyAppPublisher}
+AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
