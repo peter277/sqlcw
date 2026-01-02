@@ -1,0 +1,5 @@
+# Mark documentation files for GitHub Linguist
+*.md linguist-documentation
+doc/** linguist-documentation
+installer/docs/** linguist-documentation
+installer/modpath-module-docs/** linguist-documentation
