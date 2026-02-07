@@ -1,5 +1,10 @@
-# Mark documentation files for GitHub Linguist
+## GitHub Linguist settings
+
+# Mark documentation files
 *.md linguist-documentation
 doc/** linguist-documentation
 installer/docs/** linguist-documentation
 installer/modpath-module-docs/** linguist-documentation
+
+# Enable SQL detection
+*.sql linguist-detectable=true linguist-language=sql
